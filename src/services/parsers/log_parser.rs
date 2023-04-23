@@ -1,24 +1,17 @@
 use crate::{error::ServiceError, services::model::events::find_by_signature};
-use bson::oid::Error;
-use hex::FromHexError;
 use num::bigint::BigUint;
 use num::traits::cast::FromPrimitive;
 use num::traits::identities::Zero;
 use rustc_hex::FromHex;
 use serde_json::Value;
 use std::collections::HashMap;
-use web3::{
-    contract::Contract,
-    types::{H160, U256},
-};
+use web3::types::U256;
 
 pub async fn parse_data_bytes(data: &String, topic: &String) -> Result<(), ServiceError> {
-    let event = match find_by_signature(topic).await {
-        Ok(event) => event,
-        Err(e) => panic!("{}", e),
-    };
+    let event = find_by_signature(topic).await?;
 
-    event_data_decoder(event.json, data);
+    let _ = event_data_decoder(event.json, data);
+
     Ok(())
 }
 
@@ -33,7 +26,6 @@ fn event_data_decoder(event_str: String, data: &String) -> Result<(), ServiceErr
     }
 
     for input_param in event_abi["inputs"].as_array().unwrap().iter() {
-   
         let format_value = match input_param["type"].as_str().unwrap() {
             "address" => parse_h160(&split[input_index]),
             "uint256" => hex_string_to_u256(&split[input_index]),
@@ -60,7 +52,7 @@ fn hex_string_to_u256(s: &str) -> Option<String> {
         result *= BigUint::from_u8(16).unwrap();
         result += BigUint::from_u8(byte).unwrap();
     }
-  
+
     Some(U256::from_big_endian(&result.to_bytes_be()).to_string())
 }
 
@@ -71,7 +63,7 @@ fn parse_h160(s: &str) -> Option<String> {
     };
 
     let mut h160 = [0u8; 20];
-    h160.copy_from_slice(&bytes[bytes.len()-20..]);
+    h160.copy_from_slice(&bytes[bytes.len() - 20..]);
     Some(web3::types::H160(h160).to_string())
 }
 

@@ -42,7 +42,6 @@ pub async fn get_history(
             signature_str.push_str(&format!("{:02x}", byte));
         }
         let event = Event {
-            id: None,
             name: signature_event,
             signature: signature_str,
             json: event_str.json.clone().unwrap(),

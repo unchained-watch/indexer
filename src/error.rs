@@ -59,3 +59,9 @@ impl From<rustc_hex::FromHexError> for ServiceError {
         ServiceError::new(error.to_string(), Some(Box::new(error)))
     }
 }
+
+impl From<surrealdb::Error> for ServiceError {
+    fn from(error: surrealdb::Error) -> ServiceError {
+        ServiceError::new(error.to_string(), Some(Box::new(error)))
+    }
+}
