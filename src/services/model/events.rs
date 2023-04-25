@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use surrealdb::{opt::QueryResult, sql::Strand, Response};
 
 use crate::db::get_instance_db;
 
@@ -9,30 +10,27 @@ pub struct Event {
     pub json: String,
 }
 
-pub async fn create(event: &Event) -> Result<Event, surrealdb::Error> {
+pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let created: Event = match db.create("events").content(event).await {
-        Ok(value) => value,
-        Err(e) => panic!("{}", e),
-    };
-
-    Ok(created)
+    let events = find_by_signature(&event.signature).await?;
+    if events.len() == 0 {
+        match db.create("events").content(event).await {
+            Ok(value) => value,
+            Err(e) => panic!("{}", e),
+        };
+    }
+    Ok(())
 }
 
-pub async fn find_by_signature(signature: &String) -> Result<Event, surrealdb::Error> {
+pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
-    let mut all_event = db
-        .query("SELECT * FROM events")
-        .await?;
-
-    println!("{:?}",all_event);
-
     let mut result = db
-        .query("SELECT * FROM events WHERE events.signature = $signature")
-        .bind(("signature", signature))
+        .query("SELECT * FROM events WHERE signature = $signature")
+        .bind(("signature", signature.to_string()))
         .await?;
 
-    let event: Option<Event> = result.take(0)?;
-    Ok(event.unwrap())
+    let event: Vec<Event> = result.take(0)?;
+
+    Ok(event)
 }

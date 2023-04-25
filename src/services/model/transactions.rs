@@ -16,7 +16,7 @@ pub struct Transaction {
     pub log_index: String,
 }
 
-pub async fn create(transaction: Log) -> Result<Transaction, surrealdb::Error> {
+pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
     let mut serialized = String::new();
@@ -32,19 +32,41 @@ pub async fn create(transaction: Log) -> Result<Transaction, surrealdb::Error> {
         Ok(()) => (),
         Err(e) => panic!("{}", e),
     };
-    let created: Transaction = db
-        .create("logs")
-        .content(Transaction {
+
+    let transaction_hash = transaction.transaction_hash.unwrap().to_string();
+
+    let transactions = find_by_transaction_hash(&transaction_hash).await?;
+
+    if transactions.len() == 0 {
+        let new_transaction = Transaction {
             address: transaction.address.to_string(),
             topics,
             data: serialized,
             block_hash: transaction.block_hash.unwrap().to_string(),
             block_number: transaction.block_number.unwrap().to_string(),
-            transaction_hash: transaction.transaction_hash.unwrap().to_string(),
+            transaction_hash,
             transaction_index: transaction.transaction_index.unwrap().to_string(),
             log_index: transaction.log_index.unwrap().to_string(),
-        })
+        };
+        
+        db.create("logs")
+            .content(new_transaction)
+            .await?;
+    }
+    Ok(())
+}
+
+pub async fn find_by_transaction_hash(
+    transaction_hash: &String,
+) -> Result<Vec<Transaction>, surrealdb::Error> {
+    let db = get_instance_db().await.unwrap();
+
+    let mut result = db
+        .query("SELECT * FROM transaction WHERE transaction_hash = $transaction_hash")
+        .bind(("transaction_hash", transaction_hash.to_string()))
         .await?;
 
-    Ok(created)
+    let transactions: Vec<Transaction> = result.take(0)?;
+
+    Ok(transactions)
 }

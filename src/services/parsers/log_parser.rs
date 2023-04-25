@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use web3::types::U256;
 
 pub async fn parse_data_bytes(data: &String, topic: &String) -> Result<(), ServiceError> {
-    let event = find_by_signature(topic).await?;
-
-    let _ = event_data_decoder(event.json, data);
+    let events = find_by_signature(topic).await?;
+    let event = events.first().unwrap();
+    let _ = event_data_decoder(event.json.to_string(), data);
 
     Ok(())
 }
