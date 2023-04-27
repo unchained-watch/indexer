@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 use web3::types::Log;
 
 use crate::db::get_instance_db;
@@ -15,6 +16,13 @@ pub struct Transaction {
     pub transaction_index: String,
     pub log_index: String,
 }
+
+#[derive(Debug, Deserialize)]
+struct Record {
+    #[allow(dead_code)]
+    id: Thing,
+}
+
 
 pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
@@ -38,6 +46,7 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
     let transactions = find_by_transaction_hash(&transaction_hash).await?;
 
     if transactions.len() == 0 {
+        
         let new_transaction = Transaction {
             address: transaction.address.to_string(),
             topics,
@@ -48,10 +57,7 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
             transaction_index: transaction.transaction_index.unwrap().to_string(),
             log_index: transaction.log_index.unwrap().to_string(),
         };
-        
-        db.create("logs")
-            .content(new_transaction)
-            .await?;
+        let created : Record = db.create("logs").content(new_transaction).await?;
     }
     Ok(())
 }
