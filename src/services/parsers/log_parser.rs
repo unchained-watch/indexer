@@ -1,24 +1,24 @@
+use crate::services::model::data::create;
+use crate::services::model::events::Event;
 use crate::{error::ServiceError, services::model::events::find_by_signature};
 use num::bigint::BigUint;
 use num::traits::cast::FromPrimitive;
 use num::traits::identities::Zero;
 use rustc_hex::FromHex;
 use serde_json::Value;
-use std::collections::HashMap;
 use web3::types::U256;
 
 pub async fn parse_data_bytes(data: &String, topic: &String) -> Result<(), ServiceError> {
     let events = find_by_signature(topic).await?;
     let event = events.first().unwrap();
-    let _ = event_data_decoder(event.json.to_string(), data);
+    println!("========: {:?}",event);
+    let _ = event_data_decoder(event, data);
 
     Ok(())
 }
 
-fn event_data_decoder(event_str: String, data: &String) -> Result<(), ServiceError> {
-    let mut decoded: HashMap<String, Vec<u8>> = std::collections::HashMap::new();
-
-    let event_abi: Value = serde_json::from_str(&event_str).unwrap();
+async fn event_data_decoder(event: &Event, data: &String) -> Result<(), ServiceError> {
+    let event_abi: Value = serde_json::from_str(event.json.as_str()).unwrap();
     let split = slice_string(data, 64);
     let mut input_index = 0;
     if split.len() == 0 {
@@ -32,10 +32,8 @@ fn event_data_decoder(event_str: String, data: &String) -> Result<(), ServiceErr
             _ => panic!("Invalid type"),
         };
 
-        println!("==================DECODED DATA=========================");
-        println!("{:?}", input_param["name"]);
-        println!("{:?}", format_value);
-        println!("==================DECODED DATA=========================");
+        let contract_address = &event.contract_address;
+        create( event.id.clone().unwrap(),input_param["name"].to_string(),format_value.unwrap(), contract_address.to_string()).await?;
         input_index = input_index + 1;
     }
 

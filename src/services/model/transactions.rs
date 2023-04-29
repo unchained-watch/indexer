@@ -23,7 +23,6 @@ struct Record {
     id: Thing,
 }
 
-
 pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
@@ -46,7 +45,6 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
     let transactions = find_by_transaction_hash(&transaction_hash).await?;
 
     if transactions.len() == 0 {
-        
         let new_transaction = Transaction {
             address: transaction.address.to_string(),
             topics,
@@ -57,7 +55,7 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
             transaction_index: transaction.transaction_index.unwrap().to_string(),
             log_index: transaction.log_index.unwrap().to_string(),
         };
-        let created : Record = db.create("logs").content(new_transaction).await?;
+        let created: Record = db.create("logs").content(new_transaction).await?;
     }
     Ok(())
 }

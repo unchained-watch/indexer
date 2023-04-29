@@ -1,12 +1,15 @@
+use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
-use crate::db::get_instance_db;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
+    #[allow(dead_code)]
+    pub id: Option<Thing>,
     pub name: String,
     pub signature: String,
     pub json: String,
+    pub contract_address: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -15,12 +18,11 @@ struct Record {
     id: Thing,
 }
 
-
 pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
     let events = find_by_signature(&event.signature).await?;
     if events.len() == 0 {
-        let created : Record = db.create("events").content(event).await?;
+        let created: Record = db.create("events").content(event).await?;
     }
     Ok(())
 }
