@@ -22,7 +22,13 @@ pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
     let events = find_by_signature(&event.signature).await?;
     if events.len() == 0 {
-        let created: Record = db.create("events").content(event).await?;
+        let _: Record = match db.create("events").content(event).await {
+            Ok(id) => id,
+            Err(error) => {
+                println!("{:?}", error);
+                panic!("{:?}", error)
+            }
+        };
     }
     Ok(())
 }

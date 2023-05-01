@@ -35,16 +35,20 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
         topics.push_str(&format!("{:x}", h256));
     }
 
-    match parse_data_bytes(&serialized, &format!("{:x}", transaction.topics[0])).await {
-        Ok(()) => (),
-        Err(e) => panic!("{}", e),
-    };
-
     let transaction_hash = transaction.transaction_hash.unwrap().to_string();
-
     let transactions = find_by_transaction_hash(&transaction_hash).await?;
 
     if transactions.len() == 0 {
+        match parse_data_bytes(
+            &serialized,
+            &format!("{:x}", transaction.topics[0]),
+            &transaction_hash,
+        )
+        .await
+        {
+            Ok(()) => (),
+            Err(e) => panic!("{}", e),
+        };
         let new_transaction = Transaction {
             address: transaction.address.to_string(),
             topics,
@@ -55,7 +59,7 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
             transaction_index: transaction.transaction_index.unwrap().to_string(),
             log_index: transaction.log_index.unwrap().to_string(),
         };
-        let created: Record = db.create("logs").content(new_transaction).await?;
+        let _: Record = db.create("logs").content(new_transaction).await?;
     }
     Ok(())
 }
