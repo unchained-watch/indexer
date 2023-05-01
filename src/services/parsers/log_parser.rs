@@ -8,15 +8,19 @@ use rustc_hex::FromHex;
 use serde_json::Value;
 use web3::types::U256;
 
-pub async fn parse_data_bytes(data: &String, topic: &String) -> Result<(), ServiceError> {
+pub async fn parse_data_bytes(
+    data: &String,
+    topic: &String,
+    tx: &String,
+) -> Result<(), ServiceError> {
     let events = find_by_signature(topic).await?;
     let event = events.first().unwrap();
-    let _ = event_data_decoder(event, data).await?;
+    let _ = event_data_decoder(event, data, tx).await?;
 
     Ok(())
 }
 
-async fn event_data_decoder(event: &Event, data: &String) -> Result<(), ServiceError> {
+async fn event_data_decoder(event: &Event, data: &String, tx: &String) -> Result<(), ServiceError> {
     let event_abi: Value = serde_json::from_str(event.json.as_str()).unwrap();
     let split = slice_string(data, 64);
     let mut input_index = 0;
@@ -31,7 +35,13 @@ async fn event_data_decoder(event: &Event, data: &String) -> Result<(), ServiceE
             _ => panic!("Invalid type"),
         };
         let contract_address = &event.contract_address;
-        create( event.id.clone().unwrap(),input_param["name"].to_string(),format_value.unwrap(), contract_address.to_string()).await?;
+        create(
+            tx.to_string(),
+            input_param["name"].to_string(),
+            format_value.unwrap(),
+            contract_address.to_string(),
+        )
+        .await?;
         input_index = input_index + 1;
     }
 

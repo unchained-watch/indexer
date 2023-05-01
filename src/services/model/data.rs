@@ -4,7 +4,7 @@ use surrealdb::sql::Thing;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Data {
-    pub event_id: Thing,
+    pub tx: String,
     pub name: String,
     pub contract_address: String,
     pub value: String,
@@ -17,19 +17,22 @@ struct Record {
 }
 
 pub async fn create(
-    event_id: Thing,
+    tx: String,
     name: String,
     value: String,
     contract_address: String,
 ) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
     let data = Data {
-        event_id,
+        tx,
         name,
         value,
         contract_address,
     };
-    let created: Record = db.create("datas").content(data).await?;
-    println!("========> data : {:?}", created);
+    let _: Record = match db.create("datas").content(data).await {
+        Ok(id) => id,
+        Err(error) => panic!("{:?}", error),
+    };
+
     Ok(())
 }

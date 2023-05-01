@@ -42,17 +42,18 @@ pub async fn get_history(
             signature_str.push_str(&format!("{:02x}", byte));
         }
         let event = Event {
-            id:None,
+            id: None,
             name: signature_event,
             signature: signature_str,
             json: event_str.json.clone().unwrap(),
-            contract_address: contract_address.to_string()
+            contract_address: contract_address.to_string(),
         };
 
         match create(&event).await {
             Ok(_) => (),
             Err(error) => panic!("Error when saving data {}", error),
         };
+
         signatures.push(event);
     }
 
