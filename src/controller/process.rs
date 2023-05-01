@@ -14,7 +14,7 @@ pub async fn get_history(
     abi_path: std::path::PathBuf,
 ) -> Result<(), web3::Error> {
     let block_number_result = listeners::get_first_block_from_tx_hash(&tx_hash).await;
-
+    let contract_address = &contract_address;
     let block_number = match block_number_result {
         Ok(block_number) => block_number,
         Err(error) => panic!("Error : {:?}", error),
@@ -42,10 +42,11 @@ pub async fn get_history(
             signature_str.push_str(&format!("{:02x}", byte));
         }
         let event = Event {
-            id: None,
+            id:None,
             name: signature_event,
             signature: signature_str,
             json: event_str.json.clone().unwrap(),
+            contract_address: contract_address.to_string()
         };
 
         match create(&event).await {

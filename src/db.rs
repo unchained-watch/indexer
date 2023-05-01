@@ -1,15 +1,21 @@
-use mongodb::{error::Error, options::ClientOptions, Client, Database};
+use surrealdb::{
+    engine::remote::ws::{Client, Ws},
+    opt::auth::Root,
+    Error, Surreal,
+};
 
-pub async fn get_instance_db() -> Result<Database, Error> {
-    // create a client options
-    let mut client_options = ClientOptions::parse("mongodb://localhost:27017")
-        .await
-        .unwrap();
+pub async fn get_instance_db() -> Result<Surreal<Client>, Error> {
+    // Connect to the server
+    let db = Surreal::new::<Ws>("127.0.0.1:8000").await?;
 
-    // customize client options as needed
-    client_options.app_name = Some("indexation".to_string());
+    // Signin as a namespace, database, or root user
+    db.signin(Root {
+        username: "user",
+        password: "password",
+    })
+    .await?;
 
-    // create a client and connect to the database
-    let client = Client::with_options(client_options).unwrap();
-    Ok(client.database("bc-index"))
+    db.use_ns("bc-index").use_db("bc-index").await?;
+
+    Ok(db)
 }

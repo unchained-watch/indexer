@@ -1,42 +1,41 @@
-use bson::oid::ObjectId;
-use mongodb::bson::{doc, Document};
-use serde::{Deserialize, Serialize};
-
 use crate::db::get_instance_db;
+use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
-    #[serde(rename = "_id")] // use the MongoDB ObjectId as the struct ID
-    pub id: Option<ObjectId>,
+    #[allow(dead_code)]
+    pub id: Option<Thing>,
     pub name: String,
     pub signature: String,
     pub json: String,
+    pub contract_address: String,
 }
 
-pub async fn create(event: &Event) -> Result<(), mongodb::error::Error> {
+#[derive(Debug, Deserialize)]
+struct Record {
+    #[allow(dead_code)]
+    id: Thing,
+}
+
+pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let collection = db.collection::<Document>("events");
-
-    let docs = vec![doc! {
-        "name": &event.name,
-        "signature": &event.signature,
-        "json": &event.json
-    }];
-
-    // Insert some documents into the "mydb.books" collection.
-    collection.insert_many(docs, None).await?;
+    let events = find_by_signature(&event.signature).await?;
+    if events.len() == 0 {
+        let created: Record = db.create("events").content(event).await?;
+    }
     Ok(())
 }
 
-pub async fn find_by_signature(signature: &String) -> Result<Event, mongodb::error::Error> {
+pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let filter = doc! { "signature": signature };
-    let collection = db.collection::<Event>("events");
 
-    let event = collection
-        .find_one(filter, None)
-        .await?
-        .expect("Missing event document for this signature.");
+    let mut result = db
+        .query("SELECT * FROM events WHERE signature = $signature")
+        .bind(("signature", signature.to_string()))
+        .await?;
+
+    let event: Vec<Event> = result.take(0)?;
 
     Ok(event)
 }
