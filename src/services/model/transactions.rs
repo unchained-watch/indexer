@@ -66,7 +66,7 @@ pub async fn find_by_transaction_hash(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM transaction WHERE transaction_hash = $transaction_hash")
+        .query("SELECT * FROM logs WHERE transaction_hash = $transaction_hash")
         .bind(("transaction_hash", transaction_hash.to_string()))
         .await?;
 

@@ -11,8 +11,7 @@ use web3::types::U256;
 pub async fn parse_data_bytes(data: &String, topic: &String) -> Result<(), ServiceError> {
     let events = find_by_signature(topic).await?;
     let event = events.first().unwrap();
-    println!("========: {:?}",event);
-    let _ = event_data_decoder(event, data);
+    let _ = event_data_decoder(event, data).await?;
 
     Ok(())
 }
@@ -31,7 +30,6 @@ async fn event_data_decoder(event: &Event, data: &String) -> Result<(), ServiceE
             "uint256" => hex_string_to_u256(&split[input_index]),
             _ => panic!("Invalid type"),
         };
-
         let contract_address = &event.contract_address;
         create( event.id.clone().unwrap(),input_param["name"].to_string(),format_value.unwrap(), contract_address.to_string()).await?;
         input_index = input_index + 1;

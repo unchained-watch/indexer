@@ -30,6 +30,6 @@ pub async fn create(
         contract_address,
     };
     let created: Record = db.create("datas").content(data).await?;
-
+    println!("========> data : {:?}", created);
     Ok(())
 }
