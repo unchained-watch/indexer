@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 use std::num::ParseIntError;
-
 use hex::FromHexError;
+use std::convert::From;
 
 #[derive(Debug)]
 pub struct ServiceError {
@@ -62,6 +62,12 @@ impl From<rustc_hex::FromHexError> for ServiceError {
 
 impl From<surrealdb::Error> for ServiceError {
     fn from(error: surrealdb::Error) -> ServiceError {
+        ServiceError::new(error.to_string(), Some(Box::new(error)))
+    }
+}
+
+impl From<web3::Error> for ServiceError {
+    fn from(error: web3::Error) -> ServiceError {
         ServiceError::new(error.to_string(), Some(Box::new(error)))
     }
 }

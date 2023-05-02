@@ -2,11 +2,11 @@ use tiny_keccak::{Hasher, Keccak};
 
 use services::listeners;
 
-use crate::services::{
+use crate::{services::{
     self,
     model::events::{create, Event},
     parsers::parse_abi,
-};
+}, error::ServiceError};
 
 pub async fn get_history(
     contract_address: String,
@@ -58,5 +58,10 @@ pub async fn get_history(
     }
 
     listeners::get_past_events(&contract_address, &signatures, &block_number).await?;
+    Ok(())
+}
+
+pub async fn get_realtime_block() -> Result<(), ServiceError> {
+    listeners::get_realtime_events().await?;
     Ok(())
 }

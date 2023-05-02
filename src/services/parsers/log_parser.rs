@@ -1,12 +1,13 @@
-use crate::services::model::data::create;
-use crate::services::model::events::Event;
-use crate::{error::ServiceError, services::model::events::find_by_signature};
 use num::bigint::BigUint;
 use num::traits::cast::FromPrimitive;
 use num::traits::identities::Zero;
 use rustc_hex::FromHex;
 use serde_json::Value;
 use web3::types::U256;
+
+use crate::services::model::data::create;
+use crate::services::model::events::Event;
+use crate::{error::ServiceError, services::model::events::find_by_signature};
 
 pub async fn parse_data_bytes(
     data: &String,
