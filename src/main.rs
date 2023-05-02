@@ -3,16 +3,10 @@ mod db;
 mod error;
 mod services;
 use clap::Parser;
-use serde::{Deserialize, Serialize};
+use error::ServiceError;
 
 use crate::db::get_instance_db;
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct FormatedSignature {
-    pub name: String,
-    pub signature: String,
-    pub json: String,
-}
 
 #[derive(Parser)]
 struct Cli {
@@ -22,7 +16,7 @@ struct Cli {
 }
 
 #[tokio::main]
-async fn main() -> web3::Result<()> {
+async fn main() -> Result<(), ServiceError> {
     let args = Cli::parse();
 
     println!("Using contract_address: {}", args.contract_address);
@@ -53,7 +47,8 @@ async fn main() -> web3::Result<()> {
         Err(error) => panic!("Error : {:?}", error),
     };
 
-    controller::get_history(args.contract_address, &args.tx_hash, args.abi_path).await?;
+    //controller::get_history(args.contract_address, &args.tx_hash, args.abi_path).await?;
+    controller::get_realtime_block().await?;
 
     Ok(())
 }

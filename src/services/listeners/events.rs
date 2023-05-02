@@ -1,17 +1,15 @@
 use hex::FromHex;
 use std::convert::TryInto;
-use std::env;
 use std::str::FromStr;
-use web3::transports::WebSocket;
-use web3::types::Log;
-
-use web3::futures::future;
+use std::env;
 use web3::futures::StreamExt;
+use web3::transports::WebSocket;
+use web3::types::{BlockNumber, Log, TransactionId};
 use web3::types::{FilterBuilder, H256, U64};
 use web3::Web3;
 
-use crate::services::model::events::Event;
-use crate::FormatedSignature;
+use crate::error::ServiceError;
+use crate::services::model::events::{Event, find_by_contract_address};
 
 pub async fn get_first_block_from_tx_hash(
     tx_hash: &String,
@@ -90,50 +88,62 @@ pub async fn get_past_events(
     Ok(())
 }
 
-pub async fn get_realtime_events(
-    contract_address: &String,
-    signatures: &Vec<FormatedSignature>,
-    block_number: &U64,
-) -> Result<(), web3::Error> {
+pub async fn get_realtime_events() -> Result<(), ServiceError> {
     dotenv::dotenv().ok();
-
+    find_by_contract_address().await?;
     let websocket = WebSocket::new(&env::var("INFURA_MUMBAI").unwrap()).await?;
-    // Handle success case
-    let web3 = Web3::new(websocket);
-    let to = web3.eth().block_number().await?;
-
-    println!("Parse event from : {:?}", block_number);
-    println!("Parse event to : {:?}", to);
-    println!("Parse event contractAddress : {:?}", contract_address);
+    let web3: Web3<WebSocket> = Web3::new(websocket);
     let mut tasks = vec![];
-    for signature in signatures.iter() {
-        let hex = Vec::from_hex(&signature.signature[..]).expect("invalid hex string");
 
-        let filter = FilterBuilder::default()
-            .address(vec![
-                web3::types::Address::from_str(contract_address).unwrap()
-            ])
-            .from_block(to.into())
-            .topics(
-                Some(vec![H256::from_slice(&hex[..]).try_into().unwrap()]),
-                None,
-                None,
-                None,
-            )
-            .build();
+    let mut sub = web3.eth_subscribe().subscribe_new_heads().await?;
 
-        let sub = web3.eth_subscribe().subscribe_logs(filter).await?;
+    println!("Got subscription id: {:?}", sub.id());
 
-        let task = tokio::spawn(async move {
-            sub.for_each(|log| {
-                println!("{:?}", log);
-                println!("=================================================");
-                future::ready(())
-            })
-            .await;
-        });
-        tasks.push(task);
-    }
+    let task = tokio::spawn(async move {
+        loop {
+            if let Some(block) = (&mut sub).next().await {
+                // specify the block number you want to check
+                let u64_block_number = block.unwrap().number.unwrap();
+                let block_number = BlockNumber::Number(u64_block_number);
+
+                // get the block information
+                let block = web3
+                    .eth()
+                    .block(web3::types::BlockId::Number(block_number))
+                    .await
+                    .unwrap();
+
+                let mut contract_found = false;
+                for transaction in block.unwrap().transactions {
+                    let tx = web3
+                        .eth()
+                        .transaction(TransactionId::Hash(transaction))
+                        .await
+                        .unwrap();
+                    let tx_data = tx.unwrap();
+                    println!("-------------------");
+                    println!("to : {:?}", tx_data.to);
+                    println!("from : {:?}", tx_data.from);
+                    println!("-------------------");
+                }
+
+                // determine if the contract address is included in the block
+                if contract_found {
+                    println!(
+                        "The contract address {} is included in block {}",
+                        "0x0", u64_block_number
+                    );
+                } else {
+                    println!(
+                        "The contract address {} is not included in block {}",
+                        "0x0", u64_block_number
+                    );
+                }
+            }
+        }
+    });
+    tasks.push(task);
+
     for task in tasks {
         match task.await {
             Ok(_) => (),

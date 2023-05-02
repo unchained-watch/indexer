@@ -1,7 +1,6 @@
-use std::{fs::File, io::Read};
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::{fs::File, io::Read};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Event {
