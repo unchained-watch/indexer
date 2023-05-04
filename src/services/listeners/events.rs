@@ -140,15 +140,10 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                 // determine if the contract address is included in the block
                 if contract_found {
                     println!(
-                        "The contract address {} is included in block {}",
-                        "0x0", u64_block_number
+                        "One of contract is included in block {}",
+                        u64_block_number
                     );
-                } else {
-                    println!(
-                        "The contract address {} is not included in block {}",
-                        "0x0", u64_block_number
-                    );
-                }
+                } 
             }
         }
     });

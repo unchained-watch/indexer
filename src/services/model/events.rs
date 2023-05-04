@@ -20,7 +20,7 @@ struct Record {
 
 pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let events = find_by_signature(&event.signature).await?;
+    let events = find_by_signature_and_contract_address(&event.signature, &event.contract_address).await?;
     if events.len() == 0 {
         let _: Record = match db.create("events").content(event).await {
             Ok(id) => id,
@@ -31,6 +31,20 @@ pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
         };
     }
     Ok(())
+}
+
+pub async fn find_by_signature_and_contract_address(signature: &String, contract_address: &String) -> Result<Vec<Event>, surrealdb::Error> {
+    let db = get_instance_db().await.unwrap();
+
+    let mut result = db
+        .query("SELECT * FROM events WHERE signature = $signature AND contract_address = $contract_address")
+        .bind(("signature", signature.to_string()))
+        .bind(("contract_address", contract_address.to_string()))
+        .await?;
+
+    let event: Vec<Event> = result.take(0)?;
+
+    Ok(event)
 }
 
 pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surrealdb::Error> {
