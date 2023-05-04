@@ -1,7 +1,7 @@
 use hex::FromHex;
 use std::convert::TryInto;
-use std::str::FromStr;
 use std::env;
+use std::str::FromStr;
 use web3::futures::StreamExt;
 use web3::transports::WebSocket;
 use web3::types::{BlockNumber, Log, TransactionId};
@@ -9,7 +9,7 @@ use web3::types::{FilterBuilder, H256, U64};
 use web3::Web3;
 
 use crate::error::ServiceError;
-use crate::services::model::events::{Event, find_by_contract_address};
+use crate::services::model::events::{find_by_contract_address, Event};
 
 pub async fn get_first_block_from_tx_hash(
     tx_hash: &String,
@@ -90,7 +90,7 @@ pub async fn get_past_events(
 
 pub async fn get_realtime_events() -> Result<(), ServiceError> {
     dotenv::dotenv().ok();
-    find_by_contract_address().await?;
+
     let websocket = WebSocket::new(&env::var("INFURA_MUMBAI").unwrap()).await?;
     let web3: Web3<WebSocket> = Web3::new(websocket);
     let mut tasks = vec![];
@@ -114,6 +114,7 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                     .unwrap();
 
                 let mut contract_found = false;
+                let mut addresses = Vec::new();
                 for transaction in block.unwrap().transactions {
                     let tx = web3
                         .eth()
@@ -121,12 +122,21 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                         .await
                         .unwrap();
                     let tx_data = tx.unwrap();
-                    println!("-------------------");
-                    println!("to : {:?}", tx_data.to);
-                    println!("from : {:?}", tx_data.from);
-                    println!("-------------------");
+                    if tx_data.from.is_some() {
+                        addresses.push(tx_data.from.unwrap().to_string());
+                    }
+                    if tx_data.to.is_some() {
+                        addresses.push(tx_data.to.unwrap().to_string());
+                    }
                 }
-
+                match find_by_contract_address(addresses).await {
+                    Ok(value) => {
+                        if value.len()>0{
+                            contract_found=true;
+                        }
+                    }
+                    Err(error) => panic!("Error : {:?}", error),
+                };
                 // determine if the contract address is included in the block
                 if contract_found {
                     println!(

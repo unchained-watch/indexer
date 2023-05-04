@@ -24,6 +24,7 @@ struct Record {
 }
 
 pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
+    println!("==========> transaction : {:?}",transaction);
     let db = get_instance_db().await.unwrap();
 
     let mut serialized = String::new();

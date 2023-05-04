@@ -46,18 +46,15 @@ pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surreal
     Ok(event)
 }
 
-pub async fn find_by_contract_address() -> Result<Vec<String>, surrealdb::Error> {
+pub async fn find_by_contract_address(addresses: Vec<String>) -> Result<Vec<String>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT contract_address FROM events")
+        .query("SELECT contract_address FROM events WHERE contract_address CONTAINSANY $addresses")
+        .bind(("addresses",addresses))
         .await?;
 
-    let contract_addresses: Vec<String> = result.take(0)?;
-
-    println!("========> contract address");
-    println!("{:?}",contract_addresses);
-    println!("========> contract address");
+    let contract_addresses: Vec<String> = result.take("contract_address")?;
 
     Ok(contract_addresses)
 }

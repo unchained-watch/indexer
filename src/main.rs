@@ -7,7 +7,6 @@ use error::ServiceError;
 
 use crate::db::get_instance_db;
 
-
 #[derive(Parser)]
 struct Cli {
     contract_address: String,
@@ -47,7 +46,7 @@ async fn main() -> Result<(), ServiceError> {
         Err(error) => panic!("Error : {:?}", error),
     };
 
-    //controller::get_history(args.contract_address, &args.tx_hash, args.abi_path).await?;
+    controller::get_history(args.contract_address, &args.tx_hash, args.abi_path).await?;
     controller::get_realtime_block().await?;
 
     Ok(())
