@@ -1,8 +1,8 @@
+use hex::FromHexError;
+use std::convert::From;
 use std::error::Error;
 use std::fmt::{self, Display};
 use std::num::ParseIntError;
-use hex::FromHexError;
-use std::convert::From;
 
 #[derive(Debug)]
 pub struct ServiceError {
