@@ -7,6 +7,7 @@ pub struct Function {
     #[allow(dead_code)]
     pub id: Option<Thing>,
     pub name: String,
+    pub signature: String,
     pub json: String,
     pub contract_address: String,
 }
