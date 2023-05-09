@@ -9,7 +9,7 @@ use web3::types::{FilterBuilder, H256, U64};
 use web3::Web3;
 
 use crate::error::ServiceError;
-use crate::services::model::events::{find_by_contract_address, Event};
+use crate::model::events::{find_by_contract_address, Event};
 
 pub async fn get_first_block_from_tx_hash(
     tx_hash: &String,
@@ -71,7 +71,7 @@ pub async fn get_past_events(
         let logs: Vec<Log> = web3.eth().logs(filter).await.unwrap();
         let task = tokio::spawn(async move {
             for log in logs {
-                match crate::services::model::transactions::create(log).await {
+                match crate::model::transactions::create(log).await {
                     Ok(_) => (),
                     Err(error) => panic!("Error when saving data {}", error),
                 };

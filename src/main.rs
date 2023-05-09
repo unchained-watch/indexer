@@ -2,10 +2,11 @@ mod controller;
 mod db;
 mod error;
 mod services;
+mod model;
 use clap::Parser;
 use error::ServiceError;
 
-use crate::db::get_instance_db;
+use crate::{db::get_instance_db, model::addresses::{Address, AddressType}};
 
 #[derive(Parser)]
 struct Cli {
@@ -46,8 +47,14 @@ async fn main() -> Result<(), ServiceError> {
         Err(error) => panic!("Error : {:?}", error),
     };
 
-    controller::get_history(args.contract_address, &args.tx_hash, args.abi_path).await?;
-    controller::get_realtime_block().await?;
+   let address_to_watch =  Address {
+            id: None,
+            address_type: AddressType::CONTRACT,
+            address: args.contract_address,
+    };
 
+    model::addresses::create(&address_to_watch).await?;
+    controller::get_history(address_to_watch.address, &args.tx_hash, args.abi_path).await?;
+    controller::get_realtime_block().await?;
     Ok(())
 }
