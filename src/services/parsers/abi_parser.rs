@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::{fs::File, io::Read};
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Event {
+struct Element {
     anonymous: bool,
     inputs: Vec<Input>,
     name: String,

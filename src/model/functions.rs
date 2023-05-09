@@ -32,7 +32,7 @@ pub async fn create(function: &Function) -> Result<(), surrealdb::Error> {
     Ok(())
 }
 
-pub async fn find_by_signature_and_contract_address(name: &String, contract_address: &String) -> Result<Vec<Function>, surrealdb::Error> {
+pub async fn find_by_name_and_contract_address(name: &String, contract_address: &String) -> Result<Vec<Function>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
     let mut result = db

@@ -3,10 +3,16 @@ use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum AddressType {
+    CONTRACT,
+    WALLET,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Address {
     #[allow(dead_code)]
     pub id: Option<Thing>,
-    pub address_type: String,
+    pub address_type: AddressType,
     pub address: String,
 }
 
@@ -18,9 +24,9 @@ struct Record {
 
 pub async fn create(address: &Address) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let functions = find_by_address(&address.address).await?;
-    if functions.len() == 0 {
-        let _: Record = match db.create("addresses").content(function).await {
+    let addresses = find_by_address(&address.address).await?;
+    if addresses.len() == 0 {
+        let _: Record = match db.create("addresses").content(address).await {
             Ok(id) => id,
             Err(error) => {
                 println!("{:?}", error);
