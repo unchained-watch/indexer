@@ -2,10 +2,11 @@ use tiny_keccak::{Hasher, Keccak};
 
 use services::listeners;
 
-use crate::{services::{
-    self,
-    parsers::parse_abi,
-}, error::ServiceError, model::events::{Event, create}};
+use crate::{
+    error::ServiceError,
+    model::events::{create, Event},
+    services::{self, parsers::parse_abi},
+};
 
 pub async fn get_history(
     contract_address: String,
@@ -64,7 +65,6 @@ pub async fn get_abi(
     contract_address: String,
     abi_path: std::path::PathBuf,
 ) -> Result<(), web3::Error> {
-
     let mut signatures: Vec<Event> = vec![];
     for event_str in parse_abi(abi_path).unwrap().iter() {
         let mut signature_event = String::new();
@@ -103,8 +103,6 @@ pub async fn get_abi(
     }
     Ok(())
 }
-
-
 
 pub async fn get_realtime_block() -> Result<(), ServiceError> {
     listeners::get_realtime_events().await?;

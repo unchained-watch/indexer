@@ -20,7 +20,8 @@ struct Record {
 
 pub async fn create(function: &Function) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let functions = find_by_name_and_contract_address(&function.name, &function.contract_address).await?;
+    let functions =
+        find_by_name_and_contract_address(&function.name, &function.contract_address).await?;
     if functions.len() == 0 {
         let _: Record = match db.create("functions").content(function).await {
             Ok(id) => id,
@@ -33,11 +34,16 @@ pub async fn create(function: &Function) -> Result<(), surrealdb::Error> {
     Ok(())
 }
 
-pub async fn find_by_name_and_contract_address(name: &String, contract_address: &String) -> Result<Vec<Function>, surrealdb::Error> {
+pub async fn find_by_name_and_contract_address(
+    name: &String,
+    contract_address: &String,
+) -> Result<Vec<Function>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM functions WHERE name = $name AND contract_address = $contract_address")
+        .query(
+            "SELECT * FROM functions WHERE name = $name AND contract_address = $contract_address",
+        )
         .bind(("name", name.to_string()))
         .bind(("contract_address", contract_address.to_string()))
         .await?;

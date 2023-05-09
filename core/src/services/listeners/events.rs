@@ -131,19 +131,16 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                 }
                 match find_by_contract_address(addresses).await {
                     Ok(value) => {
-                        if value.len()>0{
-                            contract_found=true;
+                        if value.len() > 0 {
+                            contract_found = true;
                         }
                     }
                     Err(error) => panic!("Error : {:?}", error),
                 };
                 // determine if the contract address is included in the block
                 if contract_found {
-                    println!(
-                        "One of contract is included in block {}",
-                        u64_block_number
-                    );
-                } 
+                    println!("One of contract is included in block {}", u64_block_number);
+                }
             }
         }
     });
