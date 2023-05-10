@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "anvil": "export $(cat .env | xargs) && anvil -m $MNEMONIC",
+    "counter:deploy": "export $(cat .env | xargs) && forge script script/Counter.s.sol:CounterScript --fork-url $ANVIL_RPC_URL --broadcast",
+    "counter:increment": "export $(cat .env | xargs) && cast send $CONTRACT_ADDRESS 'increment()' --rpc-url $ANVIL_RPC_URL --private-key $PRIVATE_KEY",
+    "counter:decrement": "export $(cat .env | xargs) && cast send $CONTRACT_ADDRESS 'decrement()' --rpc-url $ANVIL_RPC_URL --private-key $PRIVATE_KEY"
+  }
+}

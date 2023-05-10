@@ -1,12 +1,10 @@
 [package]
-name = "api"
+name = "common"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-common = { path = "../common" }
-actix-multipart = "0.6.0"
-actix-web = "4"
-dotenv = "0.15.0"
+serde = { version = "1.0.162", features = ["derive"] }
+toml = "0.7.3"

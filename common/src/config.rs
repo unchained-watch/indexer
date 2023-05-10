@@ -3,6 +3,8 @@ use std::fs;
 use std::io::Error as IoError;
 use toml;
 
+const CONFIG_FILE_PATH: &str = "./Config.toml";
+
 #[derive(Serialize, Deserialize, Debug)]
 struct ConfigToml {
     dotenv: Option<ConfigTomlDotenv>,
@@ -20,17 +22,12 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
-        let config_filepaths: [&str; 2] = ["./Config.toml", "./config.toml"];
-
         let mut content: String = "".to_owned();
 
-        for filepath in config_filepaths {
-            let result: Result<String, IoError> = fs::read_to_string(filepath);
+        let result: Result<String, IoError> = fs::read_to_string(CONFIG_FILE_PATH);
 
-            if result.is_ok() {
-                content = result.unwrap();
-                break;
-            }
+        if result.is_ok() {
+            content = result.unwrap();
         }
 
         let config_toml: ConfigToml = toml::from_str(&content).unwrap_or_else(|_| {

@@ -1,8 +1,8 @@
 use actix_multipart::Multipart;
 use actix_web::{get, post, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use std::env;
-mod config;
-use config::Config;
+
+use common::config::Config;
 
 #[post("/abis")]
 async fn upload_abis(mut payload: Multipart, req: HttpRequest) -> impl Responder {
