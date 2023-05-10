@@ -6,10 +6,7 @@ use surrealdb::sql::Thing;
 pub struct Error {
     #[allow(dead_code)]
     pub id: Option<Thing>,
-    pub name: String,
-    pub signature: String,
-    pub json: String,
-    pub contract_address: String,
+    pub element: crate::common::Element,
 }
 
 #[derive(Debug, Deserialize)]
@@ -20,7 +17,9 @@ struct Record {
 
 pub async fn create(error: &Error) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let errors = find_by_name_and_contract_address(&error.name, &error.contract_address).await?;
+    let errors =
+        find_by_name_and_contract_address(&error.element.name, &error.element.contract_address)
+            .await?;
     if errors.len() == 0 {
         let _: Record = match db.create("errors").content(error).await {
             Ok(id) => id,
@@ -33,7 +32,10 @@ pub async fn create(error: &Error) -> Result<(), surrealdb::Error> {
     Ok(())
 }
 
-pub async fn find_by_name_and_contract_address(name: &String, contract_address: &String) -> Result<Vec<Function>, surrealdb::Error> {
+pub async fn find_by_name_and_contract_address(
+    name: &String,
+    contract_address: &String,
+) -> Result<Vec<Error>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
 
     let mut result = db

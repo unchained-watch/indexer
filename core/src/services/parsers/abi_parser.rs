@@ -1,26 +1,9 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tiny_keccak::{Keccak, Hasher};
 use std::{fs::File, io::Read};
+use tiny_keccak::{Hasher, Keccak};
 
-use crate::{common::AbiElementType, error::ServiceError};
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Element {
-    anonymous: bool,
-    inputs: Vec<Input>,
-    name: String,
-    r#type: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct FormatedElement {
-    pub element_type: AbiElementType,
-    pub name: String,
-    pub str: Option<String>,
-    pub json: Option<String>,
-    pub signature : Option<String>
-}
+use crate::{common::{Element}, error::ServiceError};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Input {
@@ -40,7 +23,10 @@ fn read_file_contents(abi_path: std::path::PathBuf) -> Result<String, std::io::E
     Ok(contents)
 }
 
-pub async fn parse_abi(abi_path: std::path::PathBuf, contract_address: &String,) -> Result<Vec<FormatedElement>, serde_json::Error> {
+pub async fn parse_abi(
+    abi_path: std::path::PathBuf,
+    contract_address: &String,
+) -> Result<(), serde_json::Error> {
     let contents = match read_file_contents(abi_path) {
         Ok(contents) => contents,
         Err(e) => panic!("Error file reading : {:?}", e),
@@ -48,7 +34,6 @@ pub async fn parse_abi(abi_path: std::path::PathBuf, contract_address: &String,)
 
     let parsed: Value = serde_json::from_str(&contents)?;
     let events = parsed.as_array().unwrap();
-    let mut vec_of_events: Vec<FormatedElement> = Vec::new();
 
     for event in events
         .iter()
@@ -61,9 +46,9 @@ pub async fn parse_abi(abi_path: std::path::PathBuf, contract_address: &String,)
             > &0;
         let elem_type = event.get("type").unwrap().as_str().unwrap();
         let name = event.as_object().unwrap()["name"]
-                    .as_str()
-                    .unwrap()
-                    .to_owned();
+            .as_str()
+            .unwrap()
+            .to_owned();
         if is_param {
             let mut inputs = String::new();
             inputs.push_str("(");
@@ -78,61 +63,80 @@ pub async fn parse_abi(abi_path: std::path::PathBuf, contract_address: &String,)
             inputs = inputs.trim_end_matches(',').to_string();
             inputs.push_str(")");
 
-            let new_event = FormatedElement {
-                name:name.to_string(),
-                str: Some(inputs.to_string()),
-                json: Some(serde_json::to_string(event).unwrap()),
-                element_type: match elem_type {
-                    "event" => AbiElementType::EVENT,
-                    "function" => AbiElementType::FUNCTION,
-                    "error" => AbiElementType::ERROR,
-                    _ => AbiElementType::NONE,
-                },
-                signature : Some(generate_signature(&name,Some(inputs)).unwrap())
+            let new_element = Element {
+                name:inputs.to_string(),
+                json: serde_json::to_string(event).unwrap(),
+                signature: generate_signature(&name, Some(inputs)).unwrap(),
+                contract_address: contract_address.to_string(),
             };
-            vec_of_events.push(new_event);
+            save_element(elem_type,new_element).await?;
+
         } else {
-            let new_event = FormatedElement {
-                name:name.to_string(),
-                str: None,
-                json: None,
-                element_type: match elem_type {
-                    "event" => AbiElementType::EVENT,
-                    "function" => AbiElementType::FUNCTION,
-                    "error" => AbiElementType::ERROR,
-                    _ => AbiElementType::NONE,
-                },
-                signature:Some(generate_signature(&name,None).unwrap())
+            let new_element = Element {
+                name: name.to_string(),
+                json: serde_json::to_string(event).unwrap(),
+                signature: generate_signature(&name, None).unwrap(),
+                contract_address: contract_address.to_string(),
             };
-            vec_of_events.push(new_event);
+            save_element(elem_type,new_element).await?;
         }
     }
 
-    Ok(vec_of_events)
+    Ok(())
 }
 
+async fn save_element (elem_type:&str, new_element:Element) -> Result<(), serde_json::Error>{
+    match elem_type {
+        "event" =>{
+           match crate::model::events::create(&crate::model::events::Event { id: None, element: new_element }).await{
+            Ok(_)=> (),
+            Err(error)=> panic!("Error saving event : {:?}", error)
+           };
+        },
+        "function" => {
+            match crate::model::functions::create(&crate::model::functions::Function { id: None, element: new_element }).await{
+                Ok(_)=> (),
+                Err(error)=> panic!("Error saving function : {:?}", error)
+               };
+            
+        },
+        "error" => {
+            match crate::model::errors::create(&crate::model::errors::Error { id: None, element: new_element }).await{
+                Ok(_)=> (),
+                Err(error)=> panic!("Error saving error : {:?}", error)
+               };
+        },
+        _ => {
 
-fn generate_signature(name:&String,human_readable_signature:Option<String>)-> Result<String, ServiceError>{
+        },
+    };
+
+    Ok(())
+}
+
+fn generate_signature(
+    name: &String,
+    human_readable_signature: Option<String>,
+) -> Result<String, ServiceError> {
     let mut signature_event = String::new();
-        signature_event.push_str(name);
+    signature_event.push_str(name);
 
-        if let Some(value) = human_readable_signature {
-            signature_event.push_str(&value);
-        } else {
-            signature_event.push_str("()");
-        }
+    if let Some(value) = human_readable_signature {
+        signature_event.push_str(&value);
+    } else {
+        signature_event.push_str("()");
+    }
 
-        let mut keccak = Keccak::v256();
-        let mut output = [0u8; 32];
-        keccak.update(signature_event.as_bytes());
-        keccak.finalize(&mut output);
+    let mut keccak = Keccak::v256();
+    let mut output = [0u8; 32];
+    keccak.update(signature_event.as_bytes());
+    keccak.finalize(&mut output);
 
-        // Concat bytes array
-        let mut signature_str = String::new();
-        for byte in output.iter() {
-            signature_str.push_str(&format!("{:02x}", byte));
-        }
+    // Concat bytes array
+    let mut signature_str = String::new();
+    for byte in output.iter() {
+        signature_str.push_str(&format!("{:02x}", byte));
+    }
 
     Ok(signature_str)
 }
-

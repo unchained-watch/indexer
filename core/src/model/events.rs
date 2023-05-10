@@ -6,10 +6,7 @@ use surrealdb::sql::Thing;
 pub struct Event {
     #[allow(dead_code)]
     pub id: Option<Thing>,
-    pub name: String,
-    pub signature: String,
-    pub json: String,
-    pub contract_address: String,
+    pub element: crate::common::Element,
 }
 
 #[derive(Debug, Deserialize)]
@@ -21,7 +18,7 @@ struct Record {
 pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
     let events =
-        find_by_signature_and_contract_address(&event.signature, &event.contract_address).await?;
+        find_by_signature_and_contract_address(&event.element.signature, &event.element.contract_address).await?;
     if events.len() == 0 {
         let _: Record = match db.create("events").content(event).await {
             Ok(id) => id,
@@ -64,7 +61,7 @@ pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surreal
     Ok(event)
 }
 
-pub async fn find_by_contract_address(
+pub async fn find_by_contract_addresses(
     addresses: Vec<String>,
 ) -> Result<Vec<String>, surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
@@ -77,4 +74,19 @@ pub async fn find_by_contract_address(
     let contract_addresses: Vec<String> = result.take("contract_address")?;
 
     Ok(contract_addresses)
+}
+
+pub async fn find_by_contract_address(
+    address: String,
+) -> Result<Vec<Event>, surrealdb::Error> {
+    let db = get_instance_db().await.unwrap();
+
+    let mut result = db
+        .query("SELECT * FROM events WHERE contract_address = $address")
+        .bind(("address", address))
+        .await?;
+
+    let events: Vec<Event> = result.take("contract_address")?;
+
+    Ok(events)
 }
