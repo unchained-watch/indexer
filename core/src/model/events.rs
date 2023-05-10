@@ -38,7 +38,7 @@ pub async fn find_by_signature_and_contract_address(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM events WHERE signature = $signature AND contract_address = $contract_address")
+        .query("SELECT * FROM events WHERE element.signature = $signature AND element.contract_address = $contract_address")
         .bind(("signature", signature.to_string()))
         .bind(("contract_address", contract_address.to_string()))
         .await?;
@@ -52,7 +52,7 @@ pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surreal
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM events WHERE signature = $signature")
+        .query("SELECT * FROM events WHERE element.signature = $signature")
         .bind(("signature", signature.to_string()))
         .await?;
 
@@ -67,7 +67,7 @@ pub async fn find_by_contract_addresses(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT contract_address FROM events WHERE contract_address CONTAINSANY $addresses")
+        .query("SELECT contract_address FROM events WHERE element.contract_address CONTAINSANY $addresses")
         .bind(("addresses", addresses))
         .await?;
 
@@ -82,11 +82,11 @@ pub async fn find_by_contract_address(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM events WHERE contract_address = $address")
+        .query("SELECT * FROM events WHERE element.contract_address = $address")
         .bind(("address", address))
         .await?;
 
-    let events: Vec<Event> = result.take("contract_address")?;
+    let events: Vec<Event> = result.take(0)?;
 
     Ok(events)
 }

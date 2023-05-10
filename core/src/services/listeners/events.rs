@@ -51,6 +51,7 @@ pub async fn get_past_events(
     println!("Parse event contractAddress : {:?}", contract_address);
     let mut tasks = vec![];
     let events = find_by_contract_address(contract_address.to_string()).await?;
+
     for event in events.iter() {
         let hex = Vec::from_hex(&event.element.signature[..]).expect("invalid hex string");
 

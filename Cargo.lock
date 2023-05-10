@@ -816,6 +816,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "core"
+version = "0.2.0"
+dependencies = [
+ "bson",
+ "chrono",
+ "clap",
+ "dotenv",
+ "hex",
+ "hex-literal",
+ "num",
+ "rustc-hex",
+ "serde",
+ "serde_json",
+ "surrealdb",
+ "tiny-keccak",
+ "tokio",
+ "web3",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1659,26 +1679,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "indexation"
-version = "0.2.0"
-dependencies = [
- "bson",
- "chrono",
- "clap",
- "dotenv",
- "hex",
- "hex-literal",
- "num",
- "rustc-hex",
- "serde",
- "serde_json",
- "surrealdb",
- "tiny-keccak",
- "tokio",
- "web3",
 ]
 
 [[package]]

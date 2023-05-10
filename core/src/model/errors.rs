@@ -39,7 +39,7 @@ pub async fn find_by_name_and_contract_address(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM errors WHERE name = $name AND contract_address = $contract_address")
+        .query("SELECT * FROM errors WHERE element.name = $name AND element.contract_address = $contract_address")
         .bind(("name", name.to_string()))
         .bind(("contract_address", contract_address.to_string()))
         .await?;

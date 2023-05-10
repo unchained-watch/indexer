@@ -37,7 +37,7 @@ pub async fn parse_abi(
 
     for event in events
         .iter()
-        .filter(|e| e.get("type") == Some(&Value::String("event".to_string())))
+        .filter(|e| e.get("type") != Some(&Value::String("constructor".to_string())))
     {
         let is_param = &event.as_object().unwrap()["inputs"]
             .as_array()
@@ -45,7 +45,7 @@ pub async fn parse_abi(
             .len()
             > &0;
         let elem_type = event.get("type").unwrap().as_str().unwrap();
-        let name = event.as_object().unwrap()["name"]
+        let mut name = event.as_object().unwrap()["name"]
             .as_str()
             .unwrap()
             .to_owned();
@@ -62,9 +62,9 @@ pub async fn parse_abi(
             }
             inputs = inputs.trim_end_matches(',').to_string();
             inputs.push_str(")");
-
+            name.push_str(&inputs);
             let new_element = Element {
-                name:inputs.to_string(),
+                name:name.to_string(),
                 json: serde_json::to_string(event).unwrap(),
                 signature: generate_signature(&name, Some(inputs)).unwrap(),
                 contract_address: contract_address.to_string(),
@@ -86,6 +86,7 @@ pub async fn parse_abi(
 }
 
 async fn save_element (elem_type:&str, new_element:Element) -> Result<(), serde_json::Error>{
+
     match elem_type {
         "event" =>{
            match crate::model::events::create(&crate::model::events::Event { id: None, element: new_element }).await{
