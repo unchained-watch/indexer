@@ -5,10 +5,7 @@ use crate::{
     services::{self, parsers::parse_abi},
 };
 
-pub async fn get_history(
-    contract_address: String,
-    tx_hash: &String,
-) -> Result<(), ServiceError> {
+pub async fn get_history(contract_address: String, tx_hash: &String) -> Result<(), ServiceError> {
     let block_number_result = listeners::get_first_block_from_tx_hash(&tx_hash).await;
     let contract_address = &contract_address;
     let block_number = match block_number_result {

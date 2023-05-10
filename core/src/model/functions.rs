@@ -17,8 +17,11 @@ struct Record {
 
 pub async fn create(function: &Function) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
-    let functions =
-        find_by_name_and_contract_address(&function.element.name, &function.element.contract_address).await?;
+    let functions = find_by_name_and_contract_address(
+        &function.element.name,
+        &function.element.contract_address,
+    )
+    .await?;
     if functions.len() == 0 {
         let _: Record = match db.create("functions").content(function).await {
             Ok(id) => id,
