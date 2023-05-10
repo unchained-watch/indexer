@@ -47,11 +47,11 @@ pub async fn get_past_events(
 
     let to = web3.eth().block_number().await?;
     let diff = to - block_number;
-    let mut euclide = 0;
-    let mut rest = 0;
+    let mut euclide: Option<i64> = None;
+    let mut rest: Option<i64> = None;
     if diff.as_u64() as i64 > 10000 {
-        euclide = diff.as_u64() as i64 / 10000;
-        rest = diff.as_u64() as i64 % 1000;
+        euclide = Some(diff.as_u64() as i64 / 10000);
+        rest = Some(diff.as_u64() as i64 % 1000);
     }
     println!("Parse event from : {:?}", block_number);
     println!("Parse event to : {:?}", to);
@@ -61,19 +61,39 @@ pub async fn get_past_events(
 
     for event in events.iter() {
         let hex = Vec::from_hex(&event.element.signature[..]).expect("invalid hex string");
-        if euclide != 0 && rest != 0 {
-            
-        } else {
-            tasks.push(
-                filter_events(
-                    &web3,
-                    &event.element.contract_address,
-                    block_number,
-                    &to,
-                    hex,
-                )
-                .await?,
-            );
+        match euclide {
+            Some(n) => {
+                let mut from = block_number.to_owned();
+                let mut to = block_number.to_owned();
+
+                for _ in std::iter::repeat(()).take(n.try_into().unwrap()) {
+                    to = to + 10_000;
+                    tasks.push(
+                        filter_events(&web3, &event.element.contract_address, &from, &to, &hex)
+                            .await?,
+                    );
+                    from = from + 10_000;
+                }
+                if let Some(r) = rest {
+                    to = to + r;
+                    tasks.push(
+                        filter_events(&web3, &event.element.contract_address, &from, &to, &hex)
+                            .await?,
+                    );
+                }
+            }
+            None => {
+                tasks.push(
+                    filter_events(
+                        &web3,
+                        &event.element.contract_address,
+                        block_number,
+                        &to,
+                        &hex,
+                    )
+                    .await?,
+                );
+            }
         }
     }
     for task in tasks {
@@ -90,7 +110,7 @@ pub async fn filter_events(
     contract_address: &String,
     from: &U64,
     to: &U64,
-    hex: Vec<u8>,
+    hex: &Vec<u8>,
 ) -> Result<JoinHandle<()>, ServiceError> {
     let filter = FilterBuilder::default()
         .address(vec![
