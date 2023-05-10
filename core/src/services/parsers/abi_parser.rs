@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::{fs::File, io::Read};
 use tiny_keccak::{Hasher, Keccak};
 
-use crate::{common::{Element}, error::ServiceError};
+use crate::{common::Element, error::ServiceError};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Input {
@@ -64,13 +64,12 @@ pub async fn parse_abi(
             inputs.push_str(")");
             name.push_str(&inputs);
             let new_element = Element {
-                name:name.to_string(),
+                name: name.to_string(),
                 json: serde_json::to_string(event).unwrap(),
                 signature: generate_signature(&name, Some(inputs)).unwrap(),
                 contract_address: contract_address.to_string(),
             };
-            save_element(elem_type,new_element).await?;
-
+            save_element(elem_type, new_element).await?;
         } else {
             let new_element = Element {
                 name: name.to_string(),
@@ -78,38 +77,49 @@ pub async fn parse_abi(
                 signature: generate_signature(&name, None).unwrap(),
                 contract_address: contract_address.to_string(),
             };
-            save_element(elem_type,new_element).await?;
+            save_element(elem_type, new_element).await?;
         }
     }
 
     Ok(())
 }
 
-async fn save_element (elem_type:&str, new_element:Element) -> Result<(), serde_json::Error>{
-
+async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde_json::Error> {
     match elem_type {
-        "event" =>{
-           match crate::model::events::create(&crate::model::events::Event { id: None, element: new_element }).await{
-            Ok(_)=> (),
-            Err(error)=> panic!("Error saving event : {:?}", error)
-           };
-        },
+        "event" => {
+            match crate::model::events::create(&crate::model::events::Event {
+                id: None,
+                element: new_element,
+            })
+            .await
+            {
+                Ok(_) => (),
+                Err(error) => panic!("Error saving event : {:?}", error),
+            };
+        }
         "function" => {
-            match crate::model::functions::create(&crate::model::functions::Function { id: None, element: new_element }).await{
-                Ok(_)=> (),
-                Err(error)=> panic!("Error saving function : {:?}", error)
-               };
-            
-        },
+            match crate::model::functions::create(&crate::model::functions::Function {
+                id: None,
+                element: new_element,
+            })
+            .await
+            {
+                Ok(_) => (),
+                Err(error) => panic!("Error saving function : {:?}", error),
+            };
+        }
         "error" => {
-            match crate::model::errors::create(&crate::model::errors::Error { id: None, element: new_element }).await{
-                Ok(_)=> (),
-                Err(error)=> panic!("Error saving error : {:?}", error)
-               };
-        },
-        _ => {
-
-        },
+            match crate::model::errors::create(&crate::model::errors::Error {
+                id: None,
+                element: new_element,
+            })
+            .await
+            {
+                Ok(_) => (),
+                Err(error) => panic!("Error saving error : {:?}", error),
+            };
+        }
+        _ => {}
     };
 
     Ok(())
