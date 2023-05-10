@@ -9,7 +9,7 @@ use web3::types::{FilterBuilder, H256, U64};
 use web3::Web3;
 
 use crate::error::ServiceError;
-use crate::model::events::{find_by_contract_address, Event};
+use crate::model::events::{find_by_contract_addresses, Event, find_by_contract_address};
 
 pub async fn get_first_block_from_tx_hash(
     tx_hash: &String,
@@ -37,9 +37,8 @@ pub async fn get_first_block_from_tx_hash(
 
 pub async fn get_past_events(
     contract_address: &String,
-    signatures: &Vec<Event>,
     block_number: &U64,
-) -> Result<(), web3::Error> {
+) -> Result<(), ServiceError> {
     dotenv::dotenv().ok();
 
     let websocket = WebSocket::new(&env::var("INFURA_MUMBAI").unwrap()).await?;
@@ -51,8 +50,9 @@ pub async fn get_past_events(
     println!("Parse event to : {:?}", to);
     println!("Parse event contractAddress : {:?}", contract_address);
     let mut tasks = vec![];
-    for signature in signatures.iter() {
-        let hex = Vec::from_hex(&signature.signature[..]).expect("invalid hex string");
+    let events = find_by_contract_address(contract_address.to_string()).await?;
+    for event in events.iter() {
+        let hex = Vec::from_hex(&event.element.signature[..]).expect("invalid hex string");
 
         let filter = FilterBuilder::default()
             .address(vec![
@@ -129,7 +129,7 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                         addresses.push(tx_data.to.unwrap().to_string());
                     }
                 }
-                match find_by_contract_address(addresses).await {
+                match find_by_contract_addresses(addresses).await {
                     Ok(value) => {
                         if value.len() > 0 {
                             contract_found = true;

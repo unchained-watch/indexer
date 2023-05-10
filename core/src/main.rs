@@ -58,7 +58,8 @@ async fn main() -> Result<(), ServiceError> {
     };
 
     model::addresses::create(&address_to_watch).await?;
-    controller::get_history(address_to_watch.address, &args.tx_hash, args.abi_path).await?;
+    controller::get_abi(address_to_watch.address.to_string(), args.abi_path).await?;
+    controller::get_history(address_to_watch.address, &args.tx_hash).await?;
     controller::get_realtime_block().await?;
     Ok(())
 }

@@ -22,7 +22,7 @@ pub async fn parse_data_bytes(
 }
 
 async fn event_data_decoder(event: &Event, data: &String, tx: &String) -> Result<(), ServiceError> {
-    let event_abi: Value = serde_json::from_str(event.json.as_str()).unwrap();
+    let event_abi: Value = serde_json::from_str(event.element.json.as_str()).unwrap();
     let split = slice_string(data, 64);
     let mut input_index = 0;
     if split.len() == 0 {
@@ -35,7 +35,7 @@ async fn event_data_decoder(event: &Event, data: &String, tx: &String) -> Result
             "uint256" => hex_string_to_u256(&split[input_index]),
             _ => panic!("Invalid type"),
         };
-        let contract_address = &event.contract_address;
+        let contract_address = &event.element.contract_address;
         create(
             tx.to_string(),
             input_param["name"].to_string(),
