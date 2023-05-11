@@ -38,7 +38,6 @@ pub async fn parse_abi(
         true => parsed.as_object().unwrap()["abi"].as_array().unwrap(),
         false => parsed.as_array().unwrap(),
     };
-    debug!("{:?}", abi);
 
     for element in abi
         .iter()

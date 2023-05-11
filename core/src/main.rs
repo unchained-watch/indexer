@@ -4,7 +4,8 @@ mod error;
 mod model;
 mod services;
 use clap::Parser;
-use common::environment::is_development;
+use common::{config::Config, environment::is_development};
+use dotenv::dotenv;
 use error::ServiceError;
 use tracing::{info, Level};
 use tracing_subscriber;
@@ -20,11 +21,15 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
+    let config: Config = Config::new();
+
     if is_development() {
+        dotenv::from_filename(config.dotenv_path).ok();
         tracing_subscriber::fmt()
             .with_max_level(Level::DEBUG)
             .init();
     } else {
+        dotenv().ok();
         tracing_subscriber::fmt::init();
     }
 
