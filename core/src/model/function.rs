@@ -2,11 +2,13 @@ use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
 
+use super::element::Element;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Function {
     #[allow(dead_code)]
     pub id: Option<Thing>,
-    pub element: crate::common::Element,
+    pub element: Element,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,7 +25,7 @@ pub async fn create(function: &Function) -> Result<(), surrealdb::Error> {
     )
     .await?;
     if functions.len() == 0 {
-        let _: Record = match db.create("functions").content(function).await {
+        let _: Record = match db.create("function").content(function).await {
             Ok(id) => id,
             Err(error) => {
                 println!("{:?}", error);
@@ -42,7 +44,7 @@ pub async fn find_by_name_and_contract_address(
 
     let mut result = db
         .query(
-            "SELECT * FROM functions WHERE element.name = $name AND element.contract_address = $contract_address",
+            "SELECT * FROM function WHERE element.name = $name AND element.contract_address = $contract_address",
         )
         .bind(("name", name.to_string()))
         .bind(("contract_address", contract_address.to_string()))

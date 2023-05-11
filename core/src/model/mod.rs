@@ -1,6 +1,7 @@
-pub mod addresses;
+pub mod address;
 pub mod data;
-pub mod errors;
-pub mod events;
-pub mod functions;
-pub mod transactions;
+pub mod element;
+pub mod error;
+pub mod event;
+pub mod function;
+pub mod transaction;

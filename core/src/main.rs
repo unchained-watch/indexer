@@ -1,16 +1,15 @@
-mod common;
 mod controller;
 mod db;
 mod error;
 mod model;
 mod services;
 use clap::Parser;
+use common::environment::is_development;
 use error::ServiceError;
+use tracing::{info, Level};
+use tracing_subscriber;
 
-use crate::{
-    db::get_instance_db,
-    model::addresses::{Address, AddressType},
-};
+use crate::model::address::{Address, AddressType};
 
 #[derive(Parser)]
 struct Cli {
@@ -21,35 +20,19 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<(), ServiceError> {
+    if is_development() {
+        tracing_subscriber::fmt()
+            .with_max_level(Level::DEBUG)
+            .init();
+    } else {
+        tracing_subscriber::fmt::init();
+    }
+
     let args = Cli::parse();
 
-    println!("Using contract_address: {}", args.contract_address);
-    println!("Using tx_hash: {}", args.tx_hash);
-    println!("Using abi_path: {}", args.abi_path.to_str().unwrap());
-
-    //Init index in database
-    let db = get_instance_db().await.unwrap();
-    match db
-    .query("DEFINE INDEX eventContractAndSignatureIndex ON TABLE events COLUMNS signature, contract_address UNIQUE;")
-    .await{
-        Ok(value) => println!("Indexes : {:?}",value),
-        Err(error)=>panic!("Error : {:?}",error)
-    };
-    match db
-        .query("DEFINE INDEX transactionIndex ON TABLE logs COLUMNS transaction_hash UNIQUE;")
-        .await
-    {
-        Ok(value) => println!("Indexes : {:?}", value),
-        Err(error) => panic!("Error : {:?}", error),
-    };
-
-    match db
-        .query("DEFINE INDEX datasIndex ON TABLE datas COLUMNS tx,name,value UNIQUE;")
-        .await
-    {
-        Ok(value) => println!("Indexes : {:?}", value),
-        Err(error) => panic!("Error : {:?}", error),
-    };
+    info!(contract_address = args.contract_address);
+    info!(tx_hash = args.tx_hash);
+    info!(abi_path = args.abi_path.to_str().unwrap());
 
     let address_to_watch = Address {
         id: None,
@@ -57,7 +40,7 @@ async fn main() -> Result<(), ServiceError> {
         address: args.contract_address,
     };
 
-    model::addresses::create(&address_to_watch).await?;
+    model::address::create(&address_to_watch).await?;
     controller::get_abi(address_to_watch.address.to_string(), args.abi_path).await?;
     controller::get_history(address_to_watch.address, &args.tx_hash).await?;
     controller::get_realtime_block().await?;

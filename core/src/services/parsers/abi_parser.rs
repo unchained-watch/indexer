@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{fs::File, io::Read};
 use tiny_keccak::{Hasher, Keccak};
+use tracing::{debug, instrument};
 
-use crate::{common::Element, error::ServiceError};
+use crate::{error::ServiceError, model::element::Element};
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Input {
@@ -12,14 +13,13 @@ struct Input {
     r#type: String,
 }
 
+#[instrument]
 fn read_file_contents(abi_path: std::path::PathBuf) -> Result<String, std::io::Error> {
-    println!("------------- load file -------------");
-    println!();
     let mut file = File::open(abi_path)?;
+    debug!("file open");
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-    println!();
-    println!("------------- loaded -------------");
+    debug!("file read");
     Ok(contents)
 }
 
@@ -87,7 +87,7 @@ pub async fn parse_abi(
 async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde_json::Error> {
     match elem_type {
         "event" => {
-            match crate::model::events::create(&crate::model::events::Event {
+            match crate::model::event::create(&crate::model::event::Event {
                 id: None,
                 element: new_element,
             })
@@ -98,7 +98,7 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
             };
         }
         "function" => {
-            match crate::model::functions::create(&crate::model::functions::Function {
+            match crate::model::function::create(&crate::model::function::Function {
                 id: None,
                 element: new_element,
             })
@@ -109,7 +109,7 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
             };
         }
         "error" => {
-            match crate::model::errors::create(&crate::model::errors::Error {
+            match crate::model::error::create(&crate::model::error::Error {
                 id: None,
                 element: new_element,
             })
@@ -125,11 +125,7 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
     Ok(())
 }
 
-fn generate_signature(
-    human_readable_signature: String,
-) -> Result<String, ServiceError> {
-
-
+fn generate_signature(human_readable_signature: String) -> Result<String, ServiceError> {
     let mut keccak = Keccak::v256();
     let mut output = [0u8; 32];
     keccak.update(human_readable_signature.as_bytes());

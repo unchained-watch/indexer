@@ -24,7 +24,6 @@ struct Record {
 }
 
 pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
-    println!("==========> transaction : {:?}", transaction);
     let db = get_instance_db().await.unwrap();
 
     let mut serialized = String::new();
@@ -60,7 +59,7 @@ pub async fn create(transaction: Log) -> Result<(), surrealdb::Error> {
             transaction_index: transaction.transaction_index.unwrap().to_string(),
             log_index: transaction.log_index.unwrap().to_string(),
         };
-        let _: Record = db.create("logs").content(new_transaction).await?;
+        let _: Record = db.create("log").content(new_transaction).await?;
     }
     Ok(())
 }
@@ -71,7 +70,7 @@ pub async fn find_by_transaction_hash(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM logs WHERE transaction_hash = $transaction_hash")
+        .query("SELECT * FROM log WHERE transaction_hash = $transaction_hash")
         .bind(("transaction_hash", transaction_hash.to_string()))
         .await?;
 

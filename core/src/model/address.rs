@@ -26,7 +26,7 @@ pub async fn create(address: &Address) -> Result<(), surrealdb::Error> {
     let db = get_instance_db().await.unwrap();
     let addresses = find_by_address(&address.address).await?;
     if addresses.len() == 0 {
-        let _: Record = match db.create("addresses").content(address).await {
+        let _: Record = match db.create("address").content(address).await {
             Ok(id) => id,
             Err(error) => {
                 println!("{:?}", error);
@@ -41,7 +41,7 @@ pub async fn find_by_address(address: &String) -> Result<Vec<Address>, surrealdb
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM addresses WHERE address = $address")
+        .query("SELECT * FROM address WHERE address = $address")
         .bind(("address", address.to_string()))
         .await?;
 
