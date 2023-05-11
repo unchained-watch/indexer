@@ -23,6 +23,7 @@ fn read_file_contents(abi_path: std::path::PathBuf) -> Result<String, std::io::E
     Ok(contents)
 }
 
+#[instrument]
 pub async fn parse_abi(
     abi_path: std::path::PathBuf,
     contract_address: &String,
@@ -33,26 +34,30 @@ pub async fn parse_abi(
     };
 
     let parsed: Value = serde_json::from_str(&contents)?;
-    let events = parsed.as_array().unwrap();
+    let abi = match parsed.is_object() {
+        true => parsed.as_object().unwrap()["abi"].as_array().unwrap(),
+        false => parsed.as_array().unwrap(),
+    };
+    debug!("{:?}", abi);
 
-    for event in events
+    for element in abi
         .iter()
         .filter(|e| e.get("type") != Some(&Value::String("constructor".to_string())))
     {
-        let is_param = &event.as_object().unwrap()["inputs"]
+        let is_param = &element.as_object().unwrap()["inputs"]
             .as_array()
             .unwrap()
             .len()
             > &0;
-        let elem_type = event.get("type").unwrap().as_str().unwrap();
-        let mut name = event.as_object().unwrap()["name"]
+        let elem_type = element.get("type").unwrap().as_str().unwrap();
+        let mut name = element.as_object().unwrap()["name"]
             .as_str()
             .unwrap()
             .to_owned();
         if is_param {
             let mut inputs = String::new();
             inputs.push_str("(");
-            for input in event.as_object().unwrap()["inputs"]
+            for input in element.as_object().unwrap()["inputs"]
                 .as_array()
                 .unwrap()
                 .iter()
@@ -65,7 +70,7 @@ pub async fn parse_abi(
             name.push_str(&inputs);
             let new_element = Element {
                 name: name.to_string(),
-                json: serde_json::to_string(event).unwrap(),
+                json: serde_json::to_string(element).unwrap(),
                 signature: generate_signature(name).unwrap(),
                 contract_address: contract_address.to_string(),
             };
@@ -73,7 +78,7 @@ pub async fn parse_abi(
         } else {
             let new_element = Element {
                 name: name.to_string(),
-                json: serde_json::to_string(event).unwrap(),
+                json: serde_json::to_string(element).unwrap(),
                 signature: generate_signature(name).unwrap(),
                 contract_address: contract_address.to_string(),
             };
