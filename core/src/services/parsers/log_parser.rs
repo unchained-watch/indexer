@@ -6,8 +6,8 @@ use serde_json::Value;
 use web3::types::U256;
 
 use crate::model::data::create;
-use crate::model::events::Event;
-use crate::{error::ServiceError, model::events::find_by_signature};
+use crate::model::event::Event;
+use crate::{error::ServiceError, model::event::find_by_signature};
 
 pub async fn parse_data_bytes(
     data: &String,

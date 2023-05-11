@@ -29,7 +29,7 @@ pub async fn create(
         value,
         contract_address,
     };
-    let _: Record = match db.create("datas").content(data).await {
+    let _: Record = match db.create("data").content(data).await {
         Ok(id) => id,
         Err(error) => panic!("{:?}", error),
     };

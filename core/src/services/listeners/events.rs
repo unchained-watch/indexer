@@ -10,7 +10,7 @@ use web3::types::{FilterBuilder, H256, U64};
 use web3::Web3;
 
 use crate::error::ServiceError;
-use crate::model::events::{find_by_contract_address, find_by_contract_addresses, Event};
+use crate::model::event::{find_by_contract_address, find_by_contract_addresses, Event};
 
 pub async fn get_first_block_from_tx_hash(
     tx_hash: &String,
@@ -69,7 +69,7 @@ pub async fn get_past_events(
 
                 for _ in std::iter::repeat(()).take(n.try_into().unwrap()) {
                     to = to + 10_000;
-                    println!("range block : {:?}",to - from);
+                    println!("range block : {:?}", to - from);
                     tasks.push(
                         filter_events(&event.element.contract_address, &from, &to, &hex).await?,
                     );
@@ -109,8 +109,8 @@ pub async fn filter_events(
     // Handle success case
     let web3 = Web3::new(websocket);
     let filter = FilterBuilder::default()
-    .address(vec![
-        web3::types::Address::from_str(contract_address).unwrap()
+        .address(vec![
+            web3::types::Address::from_str(contract_address).unwrap()
         ])
         .from_block(from.into())
         .to_block(to.into())
@@ -121,12 +121,12 @@ pub async fn filter_events(
             None,
         )
         .build();
-    
+
     let logs: Vec<Log> = web3.eth().logs(filter).await.unwrap();
 
     let task = tokio::spawn(async move {
         for log in logs {
-            match crate::model::transactions::create(log).await {
+            match crate::model::transaction::create(log).await {
                 Ok(_) => (),
                 Err(error) => panic!("Error when saving data {}", error),
             };

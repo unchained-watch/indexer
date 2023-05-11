@@ -2,11 +2,13 @@ use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
 
+use super::element::Element;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
     #[allow(dead_code)]
     pub id: Option<Thing>,
-    pub element: crate::common::Element,
+    pub element: Element,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,7 +25,7 @@ pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     )
     .await?;
     if events.len() == 0 {
-        let _: Record = match db.create("events").content(event).await {
+        let _: Record = match db.create("event").content(event).await {
             Ok(id) => id,
             Err(error) => {
                 println!("{:?}", error);
@@ -41,7 +43,7 @@ pub async fn find_by_signature_and_contract_address(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM events WHERE element.signature = $signature AND element.contract_address = $contract_address")
+        .query("SELECT * FROM event WHERE element.signature = $signature AND element.contract_address = $contract_address")
         .bind(("signature", signature.to_string()))
         .bind(("contract_address", contract_address.to_string()))
         .await?;
@@ -55,7 +57,7 @@ pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surreal
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM events WHERE element.signature = $signature")
+        .query("SELECT * FROM event WHERE element.signature = $signature")
         .bind(("signature", signature.to_string()))
         .await?;
 
@@ -70,7 +72,7 @@ pub async fn find_by_contract_addresses(
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT contract_address FROM events WHERE element.contract_address CONTAINSANY $addresses")
+        .query("SELECT contract_address FROM event WHERE element.contract_address CONTAINSANY $addresses")
         .bind(("addresses", addresses))
         .await?;
 
@@ -83,7 +85,7 @@ pub async fn find_by_contract_address(address: String) -> Result<Vec<Event>, sur
     let db = get_instance_db().await.unwrap();
 
     let mut result = db
-        .query("SELECT * FROM events WHERE element.contract_address = $address")
+        .query("SELECT * FROM event WHERE element.contract_address = $address")
         .bind(("address", address))
         .await?;
 
