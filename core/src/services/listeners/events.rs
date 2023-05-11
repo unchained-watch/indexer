@@ -60,6 +60,7 @@ pub async fn get_past_events(
     let events = find_by_contract_address(contract_address.to_string()).await?;
 
     for event in events.iter() {
+        println!("signature : {:?}", &event.element);
         let hex = Vec::from_hex(&event.element.signature[..]).expect("invalid hex string");
         match euclide {
             Some(n) => {
@@ -68,30 +69,22 @@ pub async fn get_past_events(
 
                 for _ in std::iter::repeat(()).take(n.try_into().unwrap()) {
                     to = to + 10_000;
+                    println!("range block : {:?}",to - from);
                     tasks.push(
-                        filter_events(&web3, &event.element.contract_address, &from, &to, &hex)
-                            .await?,
+                        filter_events(&event.element.contract_address, &from, &to, &hex).await?,
                     );
                     from = from + 10_000;
                 }
                 if let Some(r) = rest {
                     to = to + r;
                     tasks.push(
-                        filter_events(&web3, &event.element.contract_address, &from, &to, &hex)
-                            .await?,
+                        filter_events(&event.element.contract_address, &from, &to, &hex).await?,
                     );
                 }
             }
             None => {
                 tasks.push(
-                    filter_events(
-                        &web3,
-                        &event.element.contract_address,
-                        block_number,
-                        &to,
-                        &hex,
-                    )
-                    .await?,
+                    filter_events(&event.element.contract_address, block_number, &to, &hex).await?,
                 );
             }
         }
@@ -106,15 +99,18 @@ pub async fn get_past_events(
 }
 
 pub async fn filter_events(
-    web3: &Web3<WebSocket>,
     contract_address: &String,
     from: &U64,
     to: &U64,
     hex: &Vec<u8>,
 ) -> Result<JoinHandle<()>, ServiceError> {
+    // Initialize connexion with web3 crate in websocket mod
+    let websocket = WebSocket::new(&env::var("INFURA_MUMBAI").unwrap()).await?;
+    // Handle success case
+    let web3 = Web3::new(websocket);
     let filter = FilterBuilder::default()
-        .address(vec![
-            web3::types::Address::from_str(contract_address).unwrap()
+    .address(vec![
+        web3::types::Address::from_str(contract_address).unwrap()
         ])
         .from_block(from.into())
         .to_block(to.into())
@@ -125,8 +121,9 @@ pub async fn filter_events(
             None,
         )
         .build();
-
+    
     let logs: Vec<Log> = web3.eth().logs(filter).await.unwrap();
+
     let task = tokio::spawn(async move {
         for log in logs {
             match crate::model::transactions::create(log).await {

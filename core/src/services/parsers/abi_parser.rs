@@ -66,7 +66,7 @@ pub async fn parse_abi(
             let new_element = Element {
                 name: name.to_string(),
                 json: serde_json::to_string(event).unwrap(),
-                signature: generate_signature(&name, Some(inputs)).unwrap(),
+                signature: generate_signature(name).unwrap(),
                 contract_address: contract_address.to_string(),
             };
             save_element(elem_type, new_element).await?;
@@ -74,7 +74,7 @@ pub async fn parse_abi(
             let new_element = Element {
                 name: name.to_string(),
                 json: serde_json::to_string(event).unwrap(),
-                signature: generate_signature(&name, None).unwrap(),
+                signature: generate_signature(name).unwrap(),
                 contract_address: contract_address.to_string(),
             };
             save_element(elem_type, new_element).await?;
@@ -126,21 +126,13 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
 }
 
 fn generate_signature(
-    name: &String,
-    human_readable_signature: Option<String>,
+    human_readable_signature: String,
 ) -> Result<String, ServiceError> {
-    let mut signature_event = String::new();
-    signature_event.push_str(name);
 
-    if let Some(value) = human_readable_signature {
-        signature_event.push_str(&value);
-    } else {
-        signature_event.push_str("()");
-    }
 
     let mut keccak = Keccak::v256();
     let mut output = [0u8; 32];
-    keccak.update(signature_event.as_bytes());
+    keccak.update(human_readable_signature.as_bytes());
     keccak.finalize(&mut output);
 
     // Concat bytes array
