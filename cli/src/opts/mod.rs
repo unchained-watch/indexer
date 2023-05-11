@@ -1,3 +1,3 @@
-mod cli;
+mod root;
 
-pub use cli::*;
+pub use root::*;
