@@ -60,8 +60,8 @@ impl From<rustc_hex::FromHexError> for ServiceError {
     }
 }
 
-impl From<surrealdb::Error> for ServiceError {
-    fn from(error: surrealdb::Error) -> ServiceError {
+impl From<mongodb::error::Error> for ServiceError {
+    fn from(error: mongodb::error::Error) -> ServiceError {
         ServiceError::new(error.to_string(), Some(Box::new(error)))
     }
 }

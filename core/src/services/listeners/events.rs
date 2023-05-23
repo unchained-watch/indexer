@@ -4,6 +4,7 @@ use std::env;
 use std::str::FromStr;
 use tokio::task::JoinHandle;
 use tracing::debug;
+use tracing_subscriber::field::debug;
 use web3::futures::StreamExt;
 use web3::transports::WebSocket;
 use web3::types::{BlockNumber, Log, TransactionId};
@@ -156,41 +157,40 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                 let u64_block_number = block.unwrap().number.unwrap();
                 let block_number = BlockNumber::Number(u64_block_number);
 
+                debug!("Catch block number {:?}", block_number);
+
                 // get the block information
                 let block = web3
                     .eth()
-                    .block(web3::types::BlockId::Number(block_number))
+                    .block_with_txs(web3::types::BlockId::Number(block_number))
                     .await
                     .unwrap();
 
-                let mut contract_found = false;
                 let mut addresses = Vec::new();
+
                 for transaction in block.unwrap().transactions {
-                    let tx = web3
-                        .eth()
-                        .transaction(TransactionId::Hash(transaction))
-                        .await
-                        .unwrap();
-                    let tx_data = tx.unwrap();
-                    if tx_data.from.is_some() {
-                        addresses.push(tx_data.from.unwrap().to_string());
+                    debug!("Catch tx data {:?}", transaction.from);
+
+                    if transaction.from.is_some() {
+                        addresses.push(format!("{:?}", transaction.from.unwrap()));
                     }
-                    if tx_data.to.is_some() {
-                        addresses.push(tx_data.to.unwrap().to_string());
+                    if transaction.to.is_some() {
+                        addresses.push(format!("{:?}", transaction.to.unwrap()));
                     }
                 }
+
+                debug!("Search in our contracts for: {:?}", addresses);
+
                 match find_by_contract_addresses(addresses).await {
                     Ok(value) => {
                         if value.len() > 0 {
-                            contract_found = true;
+                            // determine if the contract address is included in the block
+                            debug!("One of contract is included in block {}", u64_block_number);
+                            debug!("Block {:?}", value)
                         }
                     }
                     Err(error) => panic!("Error : {:?}", error),
                 };
-                // determine if the contract address is included in the block
-                if contract_found {
-                    debug!("One of contract is included in block {}", u64_block_number);
-                }
             }
         }
     });

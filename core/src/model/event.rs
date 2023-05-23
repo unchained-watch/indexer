@@ -1,95 +1,79 @@
-use super::element::Element;
+use super::{address::Address, element::Element};
 use crate::db::get_instance_db;
+use bson::doc;
+use mongodb::options::UpdateOptions;
 use serde::{Deserialize, Serialize};
-use surrealdb::sql::Thing;
-use tracing::error;
+use tracing::debug;
+use web3::futures::TryStreamExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
-    #[allow(dead_code)]
-    pub id: Option<Thing>,
     pub element: Element,
 }
 
-#[derive(Debug, Deserialize)]
-struct Record {
-    #[allow(dead_code)]
-    id: Thing,
-}
-
-pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
+pub async fn create(event: &Event) -> Result<(), mongodb::error::Error> {
     let db = get_instance_db().await.unwrap();
-    let events = find_by_signature_and_contract_address(
-        &event.element.signature,
-        &event.element.contract_address,
-    )
-    .await?;
-    if events.len() == 0 {
-        let _: Record = match db.create("event").content(event).await {
-            Ok(id) => id,
-            Err(e) => {
-                error!("{:?}", e);
-                panic!("{:?}", e)
-            }
-        };
-    }
+
+    let collection = db.collection::<Event>("events");
+
+    let serialized_event = bson::to_bson(event)?;
+    let event_document = serialized_event.as_document().unwrap();
+
+    collection
+        .update_one(
+            doc! {"element.signature": event.element.signature.to_string()},
+            doc! {"$set": event_document.to_owned()},
+            UpdateOptions::builder().upsert(true).build(),
+        )
+        .await?;
+
     Ok(())
 }
 
-pub async fn find_by_signature_and_contract_address(
-    signature: &String,
-    contract_address: &String,
-) -> Result<Vec<Event>, surrealdb::Error> {
+pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, mongodb::error::Error> {
     let db = get_instance_db().await.unwrap();
+    let collection = db.collection::<Event>("events");
 
-    let mut result = db
-        .query("SELECT * FROM event WHERE element.signature = $signature AND element.contract_address = $contract_address")
-        .bind(("signature", signature.to_string()))
-        .bind(("contract_address", contract_address.to_string()))
+    let events = collection
+        .find(doc! { "signature": signature.to_string() }, None)
+        .await?
+        .try_collect()
         .await?;
 
-    let event: Vec<Event> = result.take(0)?;
-
-    Ok(event)
-}
-
-pub async fn find_by_signature(signature: &String) -> Result<Vec<Event>, surrealdb::Error> {
-    let db = get_instance_db().await.unwrap();
-
-    let mut result = db
-        .query("SELECT * FROM event WHERE element.signature = $signature")
-        .bind(("signature", signature.to_string()))
-        .await?;
-
-    let event: Vec<Event> = result.take(0)?;
-
-    Ok(event)
+    Ok(events)
 }
 
 pub async fn find_by_contract_addresses(
     addresses: Vec<String>,
-) -> Result<Vec<String>, surrealdb::Error> {
+) -> Result<Vec<String>, mongodb::error::Error> {
     let db = get_instance_db().await.unwrap();
+    let collection = db.collection::<Address>("addresses");
 
-    let mut result = db
-        .query("SELECT contract_address FROM event WHERE element.contract_address CONTAINSANY $addresses")
-        .bind(("addresses", addresses))
+    let addresses: Vec<Address> = collection
+        .find(doc! {"address": {"$in": addresses}}, None)
+        .await?
+        .try_collect()
         .await?;
 
-    let contract_addresses: Vec<String> = result.take("contract_address")?;
+    debug!("Addresses {:?}", addresses);
 
-    Ok(contract_addresses)
+    Ok(addresses
+        .iter()
+        .map(|event| event.address.to_string())
+        .collect())
 }
 
-pub async fn find_by_contract_address(address: String) -> Result<Vec<Event>, surrealdb::Error> {
+pub async fn find_by_contract_address(
+    address: String,
+) -> Result<Vec<Event>, mongodb::error::Error> {
     let db = get_instance_db().await.unwrap();
+    let collection = db.collection::<Event>("events");
 
-    let mut result = db
-        .query("SELECT * FROM event WHERE element.contract_address = $address")
-        .bind(("address", address))
+    let events = collection
+        .find(doc! { "address": address }, None)
+        .await?
+        .try_collect()
         .await?;
-
-    let events: Vec<Event> = result.take(0)?;
 
     Ok(events)
 }
