@@ -1,6 +1,7 @@
 use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
+use tracing::error;
 
 use super::element::Element;
 
@@ -27,9 +28,9 @@ pub async fn create(function: &Function) -> Result<(), surrealdb::Error> {
     if functions.len() == 0 {
         let _: Record = match db.create("function").content(function).await {
             Ok(id) => id,
-            Err(error) => {
-                println!("{:?}", error);
-                panic!("{:?}", error)
+            Err(e) => {
+                error!("{:?}", e);
+                panic!("{:?}", e)
             }
         };
     }

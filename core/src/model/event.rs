@@ -1,8 +1,8 @@
+use super::element::Element;
 use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
-
-use super::element::Element;
+use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
@@ -27,9 +27,9 @@ pub async fn create(event: &Event) -> Result<(), surrealdb::Error> {
     if events.len() == 0 {
         let _: Record = match db.create("event").content(event).await {
             Ok(id) => id,
-            Err(error) => {
-                println!("{:?}", error);
-                panic!("{:?}", error)
+            Err(e) => {
+                error!("{:?}", e);
+                panic!("{:?}", e)
             }
         };
     }

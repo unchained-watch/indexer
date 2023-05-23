@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Error as IoError;
 use toml;
+use tracing::info;
 
 const CONFIG_FILE_PATH: &str = "./Config.toml";
 
@@ -31,17 +32,17 @@ impl Config {
         }
 
         let config_toml: ConfigToml = toml::from_str(&content).unwrap_or_else(|_| {
-            println!("Failed to create ConfigToml Object out of config file.");
+            info!("Failed to create ConfigToml Object out of config file.");
             ConfigToml { dotenv: None }
         });
 
         let dotenv_path: String = match config_toml.dotenv {
             Some(dotenv) => dotenv.path.unwrap_or_else(|| {
-                println!("Missing field path in table dotenv.");
+                info!("Missing field path in table dotenv.");
                 "unknown".to_owned()
             }),
             None => {
-                println!("Missing table dotenv.");
+                info!("Missing table dotenv.");
                 "unknown".to_owned()
             }
         };
