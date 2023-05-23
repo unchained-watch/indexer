@@ -40,7 +40,6 @@ async fn main() -> Result<(), ServiceError> {
     info!(abi_path = args.abi_path.to_str().unwrap());
 
     let address_to_watch = Address {
-        id: None,
         address_type: AddressType::CONTRACT,
         address: args.contract_address,
     };

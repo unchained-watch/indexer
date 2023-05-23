@@ -92,7 +92,6 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
     match elem_type {
         "event" => {
             match crate::model::event::create(&crate::model::event::Event {
-                id: None,
                 element: new_element,
             })
             .await
@@ -103,7 +102,6 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
         }
         "function" => {
             match crate::model::function::create(&crate::model::function::Function {
-                id: None,
                 element: new_element,
             })
             .await
@@ -114,7 +112,6 @@ async fn save_element(elem_type: &str, new_element: Element) -> Result<(), serde
         }
         "error" => {
             match crate::model::error::create(&crate::model::error::Error {
-                id: None,
                 element: new_element,
             })
             .await
