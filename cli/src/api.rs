@@ -12,13 +12,10 @@ pub fn upload_file(
     if let Some(exclude_patterns) = exclude {
         for exclude_pattern in exclude_patterns {
             if glob::Pattern::new(exclude_pattern)?.matches(file_path.to_str().unwrap()) {
-                println!("Dont upload {}", file_path.to_str().unwrap());
                 return Ok(());
             }
         }
     }
-
-    println!("Upload {}", file_path.to_str().unwrap());
 
     let file_name = file_path.file_name().unwrap().to_str().unwrap();
     // let file_content = fs::read(file_path)?;

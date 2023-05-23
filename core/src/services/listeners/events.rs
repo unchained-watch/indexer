@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use std::env;
 use std::str::FromStr;
 use tokio::task::JoinHandle;
+use tracing::debug;
 use web3::futures::StreamExt;
 use web3::transports::WebSocket;
 use web3::types::{BlockNumber, Log, TransactionId};
@@ -29,7 +30,7 @@ pub async fn get_first_block_from_tx_hash(
             .block_number
             .expect("Block number missing in receipt");
 
-        println!("block_number : {:?}", block_number);
+        debug!("block_number : {:?}", block_number);
         return Ok(block_number);
     }
 
@@ -51,14 +52,17 @@ pub async fn get_past_events(
         euclide = Some(diff.as_u64() as i64 / 10000);
         rest = Some(diff.as_u64() as i64 % 1000);
     }
-    println!("Parse event from : {:?}", block_number);
-    println!("Parse event to : {:?}", to);
-    println!("Parse event contractAddress : {:?}", contract_address);
+
+    debug!("Parse event from : {:?}", block_number);
+    debug!("Parse event to : {:?}", to);
+    debug!("Parse event contractAddress : {:?}", contract_address);
+
     let mut tasks: Vec<JoinHandle<()>> = vec![];
     let events = find_by_contract_address(contract_address.to_string()).await?;
 
     for event in events.iter() {
-        println!("signature : {:?}", &event.element);
+        debug!("signature : {:?}", &event.element);
+
         let hex = Vec::from_hex(&event.element.signature[..]).expect("invalid hex string");
         match euclide {
             Some(n) => {
@@ -67,7 +71,9 @@ pub async fn get_past_events(
 
                 for _ in std::iter::repeat(()).take(n.try_into().unwrap()) {
                     to = to + 10_000;
-                    println!("range block : {:?}", to - from);
+
+                    debug!("range block : {:?}", to - from);
+
                     tasks.push(
                         filter_events(&event.element.contract_address, &from, &to, &hex).await?,
                     );
@@ -141,7 +147,7 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
 
     let mut sub = web3.eth_subscribe().subscribe_new_heads().await?;
 
-    println!("Got subscription id: {:?}", sub.id());
+    debug!("real time events subscription id: {:?}", sub.id());
 
     let task = tokio::spawn(async move {
         loop {
@@ -183,7 +189,7 @@ pub async fn get_realtime_events() -> Result<(), ServiceError> {
                 };
                 // determine if the contract address is included in the block
                 if contract_found {
-                    println!("One of contract is included in block {}", u64_block_number);
+                    debug!("One of contract is included in block {}", u64_block_number);
                 }
             }
         }

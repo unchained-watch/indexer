@@ -1,6 +1,7 @@
 use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
+use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AddressType {
@@ -28,9 +29,9 @@ pub async fn create(address: &Address) -> Result<(), surrealdb::Error> {
     if addresses.len() == 0 {
         let _: Record = match db.create("address").content(address).await {
             Ok(id) => id,
-            Err(error) => {
-                println!("{:?}", error);
-                panic!("{:?}", error)
+            Err(e) => {
+                error!("{:?}", e);
+                panic!("{:?}", e)
             }
         };
     }

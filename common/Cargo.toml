@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.162", features = ["derive"] }
 toml = "0.7.3"
+tracing = "0.1.37"

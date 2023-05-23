@@ -1,6 +1,7 @@
 use crate::db::get_instance_db;
 use serde::{Deserialize, Serialize};
 use surrealdb::sql::Thing;
+use tracing::error;
 
 use super::element::Element;
 
@@ -25,9 +26,9 @@ pub async fn create(error: &Error) -> Result<(), surrealdb::Error> {
     if errors.len() == 0 {
         let _: Record = match db.create("error").content(error).await {
             Ok(id) => id,
-            Err(error) => {
-                println!("{:?}", error);
-                panic!("{:?}", error)
+            Err(e) => {
+                error!("{:?}", e);
+                panic!("{:?}", e)
             }
         };
     }
