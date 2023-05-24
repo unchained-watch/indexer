@@ -1,0 +1,39 @@
+version: "2"
+
+services:
+  # @see https://hub.docker.com/r/bitnami/minio
+  minio:
+    image: bitnami/minio:${MINIO_VERSION:-latest}
+    ports:
+      - ${MINIO_EXTERNAL_PORT:-9000}:9000
+      - ${MINIO_CONSOLE_EXTERNAL_PORT:-9001}:9001
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-user}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-password}
+
+  # @see https://hub.docker.com/_/mongo
+  mongo:
+    image: mongo:${MONGO_VERSION:-5}
+    logging:
+      driver: ${MONGO_LOGS:-local}
+    ports:
+      - ${MONGO_EXTERNAL_PORT:-27017}:27017
+    volumes:
+      - data-mongo:/data/db
+
+  # @see https://hub.docker.com/_/redis
+  redis:
+    image: redis:${REDIS_VERSION:-7}
+    ports:
+      - ${REDIS_EXTERNAL_PORT:-6379}:6379
+  # @see https://hub.docker.com/r/rediscommander/redis-commander
+  redis-commander:
+    image: rediscommander/redis-commander:${REDIS_COMMANDER_VERSION:-latest}
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - ${REDIS_COMMANDER_EXTERNAL_PORT:-6380}:8081
+
+volumes:
+  data-mongo:
+    name: data-mongo
