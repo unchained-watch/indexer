@@ -2,6 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+> **Warning: the project is still in its early stages. Use it only for demo purposes**
+
 Welcome to unchained, an open-source project aimed at empowering developers with smart contract real-time indexing and observability. With unchained, you can efficiently manage and analyze smart contracts, enabling you to make informed decisions and optimize your blockchain-based applications.
 
 ## Features
